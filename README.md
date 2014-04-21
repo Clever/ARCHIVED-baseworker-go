@@ -26,4 +26,4 @@ func main() {
 
 ## API
 
-View API documentation with the `godoc` command, by running `godoc .` in the `/worker` folder.
+View API documentation with the `godoc` command, by running `godoc .` in the project root.
