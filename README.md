@@ -1,6 +1,4 @@
-# gearman
---
-    import "."
+# baseworker-go
 
 Package gearman provides a simple wrapper around a Gearman worker, based on
 http://godoc.org/github.com/mikespook/gearman-go.
@@ -75,4 +73,4 @@ INSERT TESTING INSTRUCTIONS
 
 ## Documentation
 
-INSERT INSTRUCTIONS FOR GENERATING DOCUMENTATION
+INSERT INSTRUCTIONS FOR GENERATING DOCUMENTATION - POSSIBLY MAKE IT HAPPEN AUTOMATICALLY?
