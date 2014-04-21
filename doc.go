@@ -6,21 +6,21 @@ Usage
 
 Here's an example program that just listens for "test" jobs and logs the data that it receives:
 
-        package main
+	package main
 
-        import(
-            "github.com/Clever/baseworker-go"
-            "log"
-        )
+	import(
+		"github.com/Clever/baseworker-go"
+		"log"
+	)
 
-        func jobFunc(job gearman.Job) ([]byte, error) {
-            log.Printf("Got job with data %s", job.Data())
-            return []byte{}, nil
-        }
+	func jobFunc(job gearman.Job) ([]byte, error) {
+		log.Printf("Got job with data %s", job.Data())
+		return []byte{}, nil
+	}
 
-        func main() {
-            worker := gearman.New("test", jobFunc)
-            worker.Listen("localhost", "4730")
-        }
+	func main() {
+		worker := gearman.New("test", jobFunc)
+		worker.Listen("localhost", "4730")
+	}
 */
 package gearman
