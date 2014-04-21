@@ -10,19 +10,19 @@ import (
 	"os"
 )
 
-// The same as a gearmanWorker.JobFunc, but takes in a gearman.Job instead of a gearmanWorker.Job.
+// JobFunc is a function that takes in a Gearman job and does some work on it.
 type JobFunc func(Job) ([]byte, error)
 
-// Alias for gearmanWorker.Job just so the consumer only needs one Gearman library.
+// Job is an alias for http://godoc.org/github.com/mikespook/gearman-go/worker#Job.
 type Job gearmanWorker.Job
 
-// A Gearman worker.
+// Worker represents a Gearman worker.
 type Worker struct {
 	fn   gearmanWorker.JobFunc
 	name string
 }
 
-// Starts listening
+// Listen starts listening for jobs on the specified host and port.
 func (worker *Worker) Listen(host, port string) error {
 	if host == "" || port == "" {
 		return errors.New("must provide host and port")
@@ -55,7 +55,7 @@ func (worker *Worker) Listen(host, port string) error {
 	return nil
 }
 
-// Creates a new gearman worker with the specified name and job function.
+// New creates a new gearman worker with the specified name and job function.
 func New(name string, fn JobFunc) *Worker {
 	// Turn a JobFunc into gearmanWorker.JobFunc
 	jobFunc := func(job gearmanWorker.Job) ([]byte, error) {
