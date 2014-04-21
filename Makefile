@@ -7,6 +7,7 @@ run:
 	GEARMAN_HOST=localhost GEARMAN_PORT=4730 go run main.go
 
 docs:
+	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown > README.md
 
 $(PKG):
