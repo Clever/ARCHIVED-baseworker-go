@@ -6,7 +6,7 @@ PKG = github.com/Clever/baseworker-go
 run:
 	GEARMAN_HOST=localhost GEARMAN_PORT=4730 go run main.go
 
-docs:
+README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown > README.md
 
