@@ -2,7 +2,7 @@
 Package gearman provides a simple wrapper around a Gearman worker, based on
 http://godoc.org/github.com/mikespook/gearman-go.
 
-Usage
+Example
 
 Here's an example program that just listens for "test" jobs and logs the data that it receives:
 

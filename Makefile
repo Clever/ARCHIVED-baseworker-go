@@ -1,10 +1,13 @@
 SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
 
-.PHONY: test
+.PHONY: test docs
 
 run:
 	GEARMAN_HOST=localhost GEARMAN_PORT=4730 go run main.go
+
+docs:
+	godocdown > README.md
 
 $(PKG):
 ifeq ($(LINT),1)

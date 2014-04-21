@@ -1,29 +1,78 @@
-# baseworker-go
+# gearman
+--
+    import "."
 
-`baseworker-go` is a wrapper around [gearman-go](https://github.com/mikespook/gearman-go) to provide
-a simpler API around creating a worker.
+Package gearman provides a simple wrapper around a Gearman worker, based on
+http://godoc.org/github.com/mikespook/gearman-go.
 
-## Example
+
+### Example
+
+Here's an example program that just listens for "test" jobs and logs the data
+that it receives:
+
+    package main
+
+    import(
+    	"github.com/Clever/baseworker-go"
+    	"log"
+    )
+
+    func jobFunc(job gearman.Job) ([]byte, error) {
+    	log.Printf("Got job with data %s", job.Data())
+    	return []byte{}, nil
+    }
+
+    func main() {
+    	worker := gearman.New("test", jobFunc)
+    	worker.Listen("localhost", "4730")
+    }
+
+## Usage
+
+#### type Job
 
 ```go
-package main
+type Job gearmanWorker.Job
+```
 
-import(
-    "github.com/Clever/baseworker-go/worker"
-    "log"
-)
+Job is an alias for http://godoc.org/github.com/mikespook/gearman-go/worker#Job.
 
-func jobFunc(job gearman.Job) ([]byte, error) {
-    log.Printf("Got job with data %s", job.Data())
-    return []byte{}, nil
-}
+#### type JobFunc
 
-func main() {
-    worker := gearman.New("test", jobFunc)
-    worker.Listen("localhost", "4730")
+```go
+type JobFunc func(Job) ([]byte, error)
+```
+
+JobFunc is a function that takes in a Gearman job and does some work on it.
+
+#### type Worker
+
+```go
+type Worker struct {
 }
 ```
 
-## API
+Worker represents a Gearman worker.
 
-View API documentation with the `godoc` command, by running `godoc .` in the project root.
+#### func  New
+
+```go
+func New(name string, fn JobFunc) *Worker
+```
+New creates a new gearman worker with the specified name and job function.
+
+#### func (*Worker) Listen
+
+```go
+func (worker *Worker) Listen(host, port string) error
+```
+Listen starts listening for jobs on the specified host and port.
+
+## Testing
+
+INSERT TESTING INSTRUCTIONS
+
+## Documentation
+
+INSERT INSTRUCTIONS FOR GENERATING DOCUMENTATION
