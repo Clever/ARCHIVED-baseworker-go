@@ -3,7 +3,10 @@ PKG = github.com/Clever/baseworker-go
 SUBPKGS = worker.go
 PKGS = $(PKG) $(SUBPKGS)
 
-.PHONY: test docs
+.PHONY: test golint
+
+golint:
+	go get github.com/golang/lint/golint
 
 test: $(PKGS)
 
@@ -11,11 +14,11 @@ README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown > README.md
 
-$(PKGS):
-ifneq ($(NOLINT),1)
-	golint $(GOPATH)/src/$@*/**.go
-endif
+$(PKGS): golint
 	go get -d -t $@
+ifneq ($(NOLINT),1)
+	PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
+endif
 ifeq ($(COVERAGE),1)
 	go test -cover -coverprofile=$(GOPATH)/src/$@/c.out $@ -test.v
 	go tool cover -html=$(GOPATH)/src/$@/c.out
