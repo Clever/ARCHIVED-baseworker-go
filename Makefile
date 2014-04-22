@@ -1,7 +1,6 @@
 SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
-SUBPKGS = worker.go
-PKGS = $(PKG) $(SUBPKGS)
+PKGS = $(PKG)
 
 .PHONY: test golint
 
