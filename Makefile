@@ -1,16 +1,17 @@
 SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
+SUBPKGS = worker.go
+PKGS = $(PKG) $(SUBPKGS)
 
 .PHONY: test docs
 
-run:
-	GEARMAN_HOST=localhost GEARMAN_PORT=4730 go run main.go
+test: $(PKGS)
 
 README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown > README.md
 
-$(PKG):
+$(PKGS):
 ifeq ($(LINT),1)
 	golint $(GOPATH)/src/$@*/**.go
 endif
