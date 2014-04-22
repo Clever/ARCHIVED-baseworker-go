@@ -1,7 +1,6 @@
 package gearman
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -114,9 +113,7 @@ func TestCanDo(t *testing.T) {
 	name := "worker_name"
 
 	channel = makeTCPServer(":1337", func(conn net.Conn) error {
-		bufReader := bufio.NewReader(conn)
-
-		cmd, data, err := readGearmanCommand(bufReader)
+		cmd, data, err := readGearmanCommand(conn)
 		if err != nil {
 			return err
 		}
