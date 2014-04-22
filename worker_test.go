@@ -1,6 +1,8 @@
 package gearman
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
@@ -73,7 +75,7 @@ func makeTCPServer(addr string, handler func(conn net.Conn) error) chan error {
 	return channel
 }
 
-func readBytes(reader io.Reader, size uint) ([]byte, error) {
+func readBytes(reader io.Reader, size uint32) ([]byte, error) {
 	buf := make([]byte, size)
 	_, err := io.ReadFull(reader, buf)
 	if err != nil {
@@ -82,19 +84,31 @@ func readBytes(reader io.Reader, size uint) ([]byte, error) {
 	return buf, nil
 }
 
-func readGearmanHeader(reader io.Reader) (uint, uint, error) {
+func parseBigEndianBytes(buf []byte) (uint32, error) {
+	var num uint32
+	if err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &num); err != nil {
+		return 0, err
+	}
+	return num, nil
+}
+
+func readGearmanHeader(reader io.Reader) (uint32, uint32, error) {
 	header, err := readBytes(reader, 12)
 	if err != nil {
 		return 0, 0, err
 	}
-	cmd := (uint(header[4]) << 24) | (uint(header[5]) << 16) |
-		(uint(header[6]) << 8) | uint(header[7])
-	cmdLen := (uint(header[8]) << 24) | (uint(header[9]) << 16) |
-		(uint(header[10]) << 8) | uint(header[11])
+	cmd, err := parseBigEndianBytes(header[4:8])
+	if err != nil {
+		return 0, 0, err
+	}
+	cmdLen, err := parseBigEndianBytes(header[8:12])
+	if err != nil {
+		return 0, 0, err
+	}
 	return cmd, cmdLen, nil
 }
 
-func readGearmanCommand(reader io.Reader) (uint, string, error) {
+func readGearmanCommand(reader io.Reader) (uint32, string, error) {
 	cmd, dataSize, err := readGearmanHeader(reader)
 	if err != nil {
 		return 0, "", err
