@@ -1,6 +1,10 @@
 package gearman
 
 import (
+	"bufio"
+	"fmt"
+	"io"
+	"net"
 	"testing"
 )
 
@@ -48,4 +52,91 @@ func TestJobFuncConversion(t *testing.T) {
 	}
 	worker := New("test", jobFunc)
 	worker.fn(&MockJob{payload: payload})
+}
+
+func makeTCPServer(addr string, handler func(conn net.Conn) error) chan error {
+	channel := make(chan error)
+
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			panic(err)
+		}
+		if err := handler(conn); err != nil {
+			channel <- err
+		}
+	}()
+
+	return channel
+}
+
+func readBytes(reader io.Reader, size uint) ([]byte, error) {
+	buf := make([]byte, size)
+	_, err := io.ReadFull(reader, buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+func readGearmanHeader(reader io.Reader) (uint, uint, error) {
+	header, err := readBytes(reader, 12)
+	if err != nil {
+		return 0, 0, err
+	}
+	cmd := (uint(header[4]) << 24) | (uint(header[5]) << 16) |
+		(uint(header[6]) << 8) | uint(header[7])
+	cmdLen := (uint(header[8]) << 24) | (uint(header[9]) << 16) |
+		(uint(header[10]) << 8) | uint(header[11])
+	return cmd, cmdLen, nil
+}
+
+func readGearmanCommand(reader io.Reader) (uint, string, error) {
+	cmd, dataSize, err := readGearmanHeader(reader)
+	if err != nil {
+		return 0, "", err
+	}
+	data, err := readBytes(reader, dataSize)
+	if err != nil {
+		return 0, "", err
+	}
+	return cmd, string(data), nil
+}
+
+func TestCanDo(t *testing.T) {
+
+	var channel chan error
+
+	name := "worker_name"
+
+	channel = makeTCPServer(":1337", func(conn net.Conn) error {
+		bufReader := bufio.NewReader(conn)
+
+		cmd, data, err := readGearmanCommand(bufReader)
+		if err != nil {
+			return err
+		}
+		// 1 = CAN_DO
+		if cmd != 1 {
+			return fmt.Errorf("expected command 1 (CAN_DO), received command %d", cmd)
+		}
+		if data != "worker_name" {
+			return fmt.Errorf("expected '%s', received '%s'", name, data)
+		}
+		close(channel)
+		return nil
+	})
+
+	worker := New(name, func(job Job) ([]byte, error) {
+		return []byte{}, nil
+	})
+	go worker.Listen("localhost", "1337")
+
+	for err := range channel {
+		t.Fatal(err)
+	}
 }
