@@ -12,7 +12,7 @@ README.md: *.go
 	godocdown > README.md
 
 $(PKGS):
-ifeq ($(LINT),1)
+ifneq ($(NOLINT),1)
 	golint $(GOPATH)/src/$@*/**.go
 endif
 	go get -d -t $@
