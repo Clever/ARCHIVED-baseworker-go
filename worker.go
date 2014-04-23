@@ -38,7 +38,9 @@ func (worker *Worker) Listen(host, port string) error {
 
 // Close closes the connection.
 func (worker *Worker) Close() {
-	worker.w.Close()
+	if worker.w != nil {
+		worker.w.Close()
+	}
 }
 
 // New creates a new gearman worker with the specified name and job function.
