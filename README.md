@@ -11,23 +11,23 @@ http://godoc.org/github.com/mikespook/gearman-go.
 Here's an example program that just listens for "test" jobs and logs the data
 that it receives:
 
-    	package main
+    package main
 
-    	import(
-    		"github.com/Clever/baseworker-go"
-    		"log"
-    	)
+    import(
+    	"github.com/Clever/baseworker-go"
+    	"log"
+    )
 
-    	func jobFunc(job baseworker.Job) ([]byte, error) {
-    		log.Printf("Got job with data %s", job.Data())
-    		return []byte{}, nil
-    	}
+    func jobFunc(job baseworker.Job) ([]byte, error) {
+    	log.Printf("Got job with data %s", job.Data())
+    	return []byte{}, nil
+    }
 
-    	func main() {
-    		worker := baseworker.NewWorker("test", jobFunc)
-    		worker.Listen("localhost", "4730")
-            defer worker.Close()
-    	}
+    func main() {
+    	worker := baseworker.NewWorker("test", jobFunc)
+    	worker.Listen("localhost", "4730")
+    	defer worker.Close()
+    }
 
 ## Usage
 
