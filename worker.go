@@ -27,8 +27,29 @@ func (worker *Worker) Listen(host, port string) error {
 	if host == "" || port == "" {
 		return errors.New("must provide host and port")
 	}
-	worker.w = gearmanWorker.New(1)
-	worker.w.ErrorHandler = func(e error) {
+	worker.w.AddServer("tcp4", fmt.Sprintf("%s:%s", host, port))
+	worker.w.AddFunc(worker.name, worker.fn, gearmanWorker.Immediately)
+	if err := worker.w.Ready(); err != nil {
+		log.Fatal(err)
+	}
+	worker.w.Work()
+	return nil
+}
+
+// Close closes the connection.
+func (worker *Worker) Close() {
+	worker.w.Close()
+}
+
+// New creates a new gearman worker with the specified name and job function.
+func NewWorker(name string, fn JobFunc) *Worker {
+	// Turn a JobFunc into gearmanWorker.JobFunc
+	jobFunc := func(job gearmanWorker.Job) ([]byte, error) {
+		castedJob := Job(job)
+		return fn(castedJob)
+	}
+	w := gearmanWorker.New(1)
+	w.ErrorHandler = func(e error) {
 		log.Println(e)
 		if opErr, ok := e.(*net.OpError); ok {
 			if !opErr.Temporary() {
@@ -42,30 +63,5 @@ func (worker *Worker) Listen(host, port string) error {
 			}
 		}
 	}
-	worker.w.AddServer("tcp4", fmt.Sprintf("%s:%s", host, port))
-	worker.w.AddFunc(worker.name, worker.fn, gearmanWorker.Immediately)
-	if err := worker.w.Ready(); err != nil {
-		log.Fatal(err)
-	}
-	worker.w.Work()
-	return nil
-}
-
-// Close closes the connection.
-func (worker *Worker) Close() error {
-	if worker.w == nil {
-		return errors.New("no worker connection exists")
-	}
-	worker.w.Close()
-	return nil
-}
-
-// New creates a new gearman worker with the specified name and job function.
-func NewWorker(name string, fn JobFunc) *Worker {
-	// Turn a JobFunc into gearmanWorker.JobFunc
-	jobFunc := func(job gearmanWorker.Job) ([]byte, error) {
-		castedJob := Job(job)
-		return fn(castedJob)
-	}
-	return &Worker{fn: jobFunc, name: name}
+	return &Worker{fn: jobFunc, name: name, w: w}
 }

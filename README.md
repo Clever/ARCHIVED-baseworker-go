@@ -25,8 +25,8 @@ that it receives:
 
     func main() {
     	worker := baseworker.NewWorker("test", jobFunc)
-    	worker.Listen("localhost", "4730")
     	defer worker.Close()
+    	worker.Listen("localhost", "4730")
     }
 
 ## Usage
@@ -66,7 +66,7 @@ New creates a new gearman worker with the specified name and job function.
 #### func (*Worker) Close
 
 ```go
-func (worker *Worker) Close() error
+func (worker *Worker) Close()
 ```
 Close closes the connection.
 
