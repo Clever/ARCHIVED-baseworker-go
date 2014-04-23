@@ -11,7 +11,7 @@ test: $(PKGS)
 
 README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
-	godocdown > README.md
+	godocdown $(PKG) > README.md
 
 $(PKGS): golint
 	go get -d -t $@

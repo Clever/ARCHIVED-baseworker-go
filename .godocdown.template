@@ -1,8 +1,4 @@
-# baseworker-go
-
-{{ .EmitSynopsis }}
-
-{{ .EmitUsage }}
+{{ .Emit }}
 
 ## Testing
 

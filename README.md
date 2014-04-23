@@ -1,4 +1,6 @@
-# baseworker-go
+# baseworker
+--
+    import "github.com/Clever/baseworker-go"
 
 Package gearman provides a simple wrapper around a Gearman worker, based on
 http://godoc.org/github.com/mikespook/gearman-go.

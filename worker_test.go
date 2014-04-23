@@ -1,4 +1,4 @@
-package gearman
+package baseworker
 
 import (
 	"bytes"
