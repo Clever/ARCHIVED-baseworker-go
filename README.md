@@ -71,8 +71,10 @@ Listen starts listening for jobs on the specified host and port.
 
 ## Testing
 
-INSERT TESTING INSTRUCTIONS
+You can run the test cases by typing `make test`
 
 ## Documentation
 
-INSERT INSTRUCTIONS FOR GENERATING DOCUMENTATION - POSSIBLY MAKE IT HAPPEN AUTOMATICALLY?
+The documentation is automatically generated via [godocdown](https://github.com/robertkrimen/godocdown).
+
+You can update it by typing `make README.md`.

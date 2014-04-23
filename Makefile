@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
 PKGS = $(PKG)
 
-.PHONY: test golint
+.PHONY: test golint README
 
 golint:
 	go get github.com/golang/lint/golint
@@ -12,8 +12,9 @@ test: $(PKGS)
 README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown $(PKG) > README.md
+README: README.md
 
-$(PKGS): golint README.md
+$(PKGS): golint README
 	go get -d -t $@
 ifneq ($(NOLINT),1)
 	PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
