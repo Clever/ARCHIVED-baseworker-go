@@ -43,6 +43,7 @@ func (m *MockJob) UpdateStatus(numerator, denominator int) {
 	m.denominator = denominator
 }
 
+// TestJobFuncConversion tests that our JobFunc is called when 'worker.fn' is called with a job.
 func TestJobFuncConversion(t *testing.T) {
 	payload := "I'm a payload!"
 	jobFunc := func(job Job) ([]byte, error) {
@@ -55,7 +56,7 @@ func TestJobFuncConversion(t *testing.T) {
 	worker.fn(&MockJob{payload: payload})
 }
 
-func makeTCPServer(addr string, handler func(conn net.Conn) error) chan error {
+func makeTCPServer(addr string, handler func(conn net.Conn) error) (net.Listener, chan error) {
 	channel := make(chan error)
 
 	listener, err := net.Listen("tcp", addr)
@@ -72,7 +73,7 @@ func makeTCPServer(addr string, handler func(conn net.Conn) error) chan error {
 		}
 	}()
 
-	return channel
+	return listener, channel
 }
 
 func readBytes(reader io.Reader, size uint32) ([]byte, error) {
@@ -84,7 +85,7 @@ func readBytes(reader io.Reader, size uint32) ([]byte, error) {
 	return buf, nil
 }
 
-func parseBigEndianBytes(buf []byte) (uint32, error) {
+func fromBigEndianBytes(buf []byte) (uint32, error) {
 	var num uint32
 	if err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &num); err != nil {
 		return 0, err
@@ -92,16 +93,24 @@ func parseBigEndianBytes(buf []byte) (uint32, error) {
 	return num, nil
 }
 
+func toBigEndianBytes(num uint32) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, num); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 func readGearmanHeader(reader io.Reader) (uint32, uint32, error) {
 	header, err := readBytes(reader, 12)
 	if err != nil {
 		return 0, 0, err
 	}
-	cmd, err := parseBigEndianBytes(header[4:8])
+	cmd, err := fromBigEndianBytes(header[4:8])
 	if err != nil {
 		return 0, 0, err
 	}
-	cmdLen, err := parseBigEndianBytes(header[8:12])
+	cmdLen, err := fromBigEndianBytes(header[8:12])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -113,21 +122,23 @@ func readGearmanCommand(reader io.Reader) (uint32, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	data, err := readBytes(reader, dataSize)
+	body, err := readBytes(reader, dataSize)
 	if err != nil {
 		return 0, "", err
 	}
-	return cmd, string(data), nil
+	return cmd, string(body), nil
 }
 
+// TestCanDo tests that Listen properly sends a 'CAN_DO worker_name' packet to the TCP server.
 func TestCanDo(t *testing.T) {
 
 	var channel chan error
+	var listener net.Listener
 
 	name := "worker_name"
 
-	channel = makeTCPServer(":1337", func(conn net.Conn) error {
-		cmd, data, err := readGearmanCommand(conn)
+	listener, channel = makeTCPServer(":1337", func(conn net.Conn) error {
+		cmd, body, err := readGearmanCommand(conn)
 		if err != nil {
 			return err
 		}
@@ -135,14 +146,72 @@ func TestCanDo(t *testing.T) {
 		if cmd != 1 {
 			return fmt.Errorf("expected command 1 (CAN_DO), received command %d", cmd)
 		}
-		if data != "worker_name" {
-			return fmt.Errorf("expected '%s', received '%s'", name, data)
+		if body != "worker_name" {
+			return fmt.Errorf("expected '%s', received '%s'", name, body)
 		}
 		close(channel)
 		return nil
 	})
+	defer listener.Close()
 
 	worker := New(name, func(job Job) ([]byte, error) {
+		return []byte{}, nil
+	})
+	go worker.Listen("localhost", "1337")
+
+	for err := range channel {
+		t.Fatal(err)
+	}
+}
+
+func makeGearmanCommand(cmd uint32, body []byte) ([]byte, error) {
+	header := []byte{'\x00', 'R', 'E', 'S'}
+	// 11 is JOB_ASSIGN
+	cmdBytes, err := toBigEndianBytes(cmd)
+	if err != nil {
+		return nil, err
+	}
+	header = append(header, cmdBytes...)
+	bodySize, err := toBigEndianBytes(uint32(len(body)))
+	if err != nil {
+		return nil, err
+	}
+	header = append(header, bodySize...)
+	response := append(header, body...)
+	return response, nil
+}
+
+// TestJobAssign tests that the worker runs the JOB_FUNC if the server sends a 'JOB_ASSIGN' packet.
+func TestJobAssign(t *testing.T) {
+
+	name := "worker_name"
+	workload := "the_workload"
+
+	var channel chan error
+	var listener net.Listener
+
+	listener, channel = makeTCPServer(":1337", func(conn net.Conn) error {
+		handle := "job_handle"
+		function := name
+		body := []byte(handle + string('\x00') + function + string('\x00') + workload)
+
+		response, err := makeGearmanCommand(11, body)
+		if err != nil {
+			return err
+		}
+		if _, err := conn.Write(response); err != nil {
+			return err
+		}
+		return nil
+	})
+	defer listener.Close()
+
+	worker := New(name, func(job Job) ([]byte, error) {
+		if string(job.Data()) != workload {
+			close(channel)
+			t.Fatalf("expected workload of '%s', received '%s'", workload, string(job.Data()))
+		}
+		close(channel)
 		return []byte{}, nil
 	})
 	go worker.Listen("localhost", "1337")
