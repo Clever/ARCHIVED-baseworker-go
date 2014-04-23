@@ -11,22 +11,23 @@ http://godoc.org/github.com/mikespook/gearman-go.
 Here's an example program that just listens for "test" jobs and logs the data
 that it receives:
 
-    package main
+    	package main
 
-    import(
-    	"github.com/Clever/baseworker-go"
-    	"log"
-    )
+    	import(
+    		"github.com/Clever/baseworker-go"
+    		"log"
+    	)
 
-    func jobFunc(job baseworker.Job) ([]byte, error) {
-    	log.Printf("Got job with data %s", job.Data())
-    	return []byte{}, nil
-    }
+    	func jobFunc(job baseworker.Job) ([]byte, error) {
+    		log.Printf("Got job with data %s", job.Data())
+    		return []byte{}, nil
+    	}
 
-    func main() {
-    	worker := baseworker.NewWorker("test", jobFunc)
-    	worker.Listen("localhost", "4730")
-    }
+    	func main() {
+    		worker := baseworker.NewWorker("test", jobFunc)
+    		worker.Listen("localhost", "4730")
+            defer worker.Close()
+    	}
 
 ## Usage
 
@@ -62,6 +63,13 @@ func NewWorker(name string, fn JobFunc) *Worker
 ```
 New creates a new gearman worker with the specified name and job function.
 
+#### func (*Worker) Close
+
+```go
+func (worker *Worker) Close() error
+```
+Close closes the connection.
+
 #### func (*Worker) Listen
 
 ```go
@@ -77,4 +85,6 @@ You can run the test cases by typing `make test`
 
 The documentation is automatically generated via [godocdown](https://github.com/robertkrimen/godocdown).
 
-You can update it by typing `make README.md`.
+You can update it by typing `make README`.
+
+They're also viewable online at [![GoDoc](https://godoc.org/github.com/Clever/baseworker-go?status.png)](https://godoc.org/github.com/Clever/baseworker-go).

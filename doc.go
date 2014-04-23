@@ -21,6 +21,7 @@ Here's an example program that just listens for "test" jobs and logs the data th
 	func main() {
 		worker := baseworker.NewWorker("test", jobFunc)
 		worker.Listen("localhost", "4730")
+        defer worker.Close()
 	}
 */
 package baseworker
