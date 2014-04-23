@@ -2,7 +2,7 @@
 --
     import "github.com/Clever/baseworker-go"
 
-Package gearman provides a simple wrapper around a Gearman worker, based on
+Package baseworker provides a simple wrapper around a Gearman worker, based on
 http://godoc.org/github.com/mikespook/gearman-go.
 
 
@@ -18,13 +18,13 @@ that it receives:
     	"log"
     )
 
-    func jobFunc(job gearman.Job) ([]byte, error) {
+    func jobFunc(job baseworker.Job) ([]byte, error) {
     	log.Printf("Got job with data %s", job.Data())
     	return []byte{}, nil
     }
 
     func main() {
-    	worker := gearman.New("test", jobFunc)
+    	worker := baseworker.NewWorker("test", jobFunc)
     	worker.Listen("localhost", "4730")
     }
 
@@ -55,10 +55,10 @@ type Worker struct {
 
 Worker represents a Gearman worker.
 
-#### func  New
+#### func  NewWorker
 
 ```go
-func New(name string, fn JobFunc) *Worker
+func NewWorker(name string, fn JobFunc) *Worker
 ```
 New creates a new gearman worker with the specified name and job function.
 

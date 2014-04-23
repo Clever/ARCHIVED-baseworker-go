@@ -52,7 +52,7 @@ func TestJobFuncConversion(t *testing.T) {
 		}
 		return []byte{}, nil
 	}
-	worker := New("test", jobFunc)
+	worker := NewWorker("test", jobFunc)
 	worker.fn(&MockJob{payload: payload})
 }
 
@@ -154,7 +154,7 @@ func TestCanDo(t *testing.T) {
 	})
 	defer listener.Close()
 
-	worker := New(name, func(job Job) ([]byte, error) {
+	worker := NewWorker(name, func(job Job) ([]byte, error) {
 		return []byte{}, nil
 	})
 	go worker.Listen("localhost", "1337")
@@ -206,7 +206,7 @@ func TestJobAssign(t *testing.T) {
 	})
 	defer listener.Close()
 
-	worker := New(name, func(job Job) ([]byte, error) {
+	worker := NewWorker(name, func(job Job) ([]byte, error) {
 		if string(job.Data()) != workload {
 			close(channel)
 			t.Fatalf("expected workload of '%s', received '%s'", workload, string(job.Data()))

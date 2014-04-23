@@ -56,7 +56,7 @@ func (worker *Worker) Listen(host, port string) error {
 }
 
 // New creates a new gearman worker with the specified name and job function.
-func New(name string, fn JobFunc) *Worker {
+func NewWorker(name string, fn JobFunc) *Worker {
 	// Turn a JobFunc into gearmanWorker.JobFunc
 	jobFunc := func(job gearmanWorker.Job) ([]byte, error) {
 		castedJob := Job(job)

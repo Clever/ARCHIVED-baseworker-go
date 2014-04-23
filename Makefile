@@ -13,7 +13,7 @@ README.md: *.go
 	go get github.com/robertkrimen/godocdown/godocdown
 	godocdown $(PKG) > README.md
 
-$(PKGS): golint
+$(PKGS): golint README.md
 	go get -d -t $@
 ifneq ($(NOLINT),1)
 	PATH=$(PATH):$(GOPATH)/bin golint $(GOPATH)/src/$@*/**.go
