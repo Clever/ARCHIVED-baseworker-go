@@ -3,7 +3,7 @@ package baseworker
 import (
 	"errors"
 	"fmt"
-	gearmanWorker "github.com/azylman/gearman-go/worker"
+	gearmanWorker "github.com/mikespook/gearman-go/worker"
 	"log"
 	"net"
 	"os"
@@ -28,7 +28,7 @@ func (worker *Worker) Listen(host, port string) error {
 		return errors.New("must provide host and port")
 	}
 	worker.w.AddServer("tcp4", fmt.Sprintf("%s:%s", host, port))
-	worker.w.AddFunc(worker.name, worker.fn, gearmanWorker.Immediately)
+	worker.w.AddFunc(worker.name, worker.fn, gearmanWorker.Unlimited)
 	if err := worker.w.Ready(); err != nil {
 		log.Fatal(err)
 	}
