@@ -61,7 +61,7 @@ Worker represents a Gearman worker.
 ```go
 func NewWorker(name string, fn JobFunc) *Worker
 ```
-New creates a new gearman worker with the specified name and job function.
+NewWorker creates a new gearman worker with the specified name and job function.
 
 #### func (*Worker) Close
 

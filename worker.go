@@ -43,7 +43,7 @@ func (worker *Worker) Close() {
 	}
 }
 
-// New creates a new gearman worker with the specified name and job function.
+// NewWorker creates a new gearman worker with the specified name and job function.
 func NewWorker(name string, fn JobFunc) *Worker {
 	// Turn a JobFunc into gearmanWorker.JobFunc
 	jobFunc := func(job gearmanWorker.Job) ([]byte, error) {
