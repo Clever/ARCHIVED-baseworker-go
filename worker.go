@@ -50,7 +50,7 @@ func NewWorker(name string, fn JobFunc) *Worker {
 		castedJob := Job(job)
 		return fn(castedJob)
 	}
-	w := gearmanWorker.New(1)
+	w := gearmanWorker.New(gearmanWorker.OneByOne)
 	w.ErrorHandler = func(e error) {
 		log.Println(e)
 		if opErr, ok := e.(*net.OpError); ok {
