@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/mikespook/gearman-go/client"
 	"io"
+	"log"
 	"net"
+	"os"
 	"testing"
+	"time"
 )
 
 type MockJob struct {
@@ -182,6 +186,7 @@ func makeGearmanCommand(cmd uint32, body []byte) ([]byte, error) {
 }
 
 // TestJobAssign tests that the worker runs the JOB_FUNC if the server sends a 'JOB_ASSIGN' packet.
+// TODO: something in this job throws EOFs when run multiple times, fix plz
 func TestJobAssign(t *testing.T) {
 
 	name := "worker_name"
@@ -219,4 +224,82 @@ func TestJobAssign(t *testing.T) {
 	for err := range channel {
 		t.Fatal(err)
 	}
+}
+
+func GetClient() (c *client.Client) {
+	c, err := client.New(client.Network, "127.0.0.1:4730")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	c.ErrorHandler = func(e error) {
+		log.Println(e)
+		os.Exit(1)
+	}
+	return c
+}
+
+// makes a job function that waits before completing
+func getShutdownJobFn(doneChan chan string, readyChan chan int, workload string, sleepTime time.Duration) (jf func(job Job) ([]byte, error)) {
+	return func(job Job) ([]byte, error) {
+		readyChan <- 1
+		time.Sleep(sleepTime)
+		doneChan <- workload
+		return []byte{}, nil
+	}
+}
+
+func TestShutdownNoJob(t *testing.T) {
+	worker := NewWorker("shutdown_no_job", func(job Job) ([]byte, error) {
+		t.Fatalf("should not have invoked worker!")
+		return []byte{}, nil
+	})
+
+	go worker.Listen("localhost", "4730")
+	worker.Shutdown()
+	return
+}
+
+// TestShutdown tests that the worker completes after worker.Shutdown is called
+// make sure the next job is the second workload
+//
+// NOTE: requires gearmand to be running!!!
+func TestShutdown(t *testing.T) {
+	c := GetClient()
+	defer c.Close()
+
+	// add jobs to client
+	name := "shutdown_worker"
+
+	_, err1 := c.DoBg(name, []byte("1"), client.JobNormal)
+	if err1 != nil {
+		log.Fatalln(err1)
+	}
+
+	_, err2 := c.DoBg(name, []byte("2"), client.JobNormal)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+
+	readyChan := make(chan int, 1)
+	doneChan := make(chan string, 1)
+	workload1 := "1"
+	workload2 := "2"
+
+	worker1 := NewWorker(name, getShutdownJobFn(doneChan, readyChan, workload1, 2*time.Second))
+	go worker1.Listen("localhost", "4730")
+	<-readyChan
+	worker1.Shutdown()
+
+	out1 := <-doneChan
+	if out1 != workload1 {
+		t.Fatalf("expected return of '%s', received '%s'", out1, workload1)
+	}
+	doneChan = make(chan string, 1)
+	worker2 := NewWorker(name, getShutdownJobFn(doneChan, readyChan, workload2, 0))
+	go worker2.Listen("localhost", "4730")
+	out2 := <-doneChan
+	if out2 != workload2 {
+		t.Fatalf("expected return of '%s', received '%s'", out2, workload1)
+	}
+	return
 }

@@ -11,10 +11,14 @@ test: $(PKGS)
 
 README.md: *.go
 	@go get github.com/robertkrimen/godocdown/godocdown
-	@godocdown $(PKG) > README.md
+	$(GOPATH)/bin/godocdown $(PKG) > README.md
 README: README.md
 
 $(PKGS): golint README
+	@if [[ -z "$(DRONE)" ]]; then \
+		echo "resetting gearman" \
+		./reset_gearmand.sh; \
+	fi
 	@go get -d -t $@
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)

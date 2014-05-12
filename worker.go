@@ -33,7 +33,14 @@ func (worker *Worker) Listen(host, port string) error {
 		log.Fatal(err)
 	}
 	worker.w.Work()
+	log.Printf("Done with work")
 	return nil
+}
+
+// Shutdown keeps the worker from grabbing the next job and closes the worker
+func (worker *Worker) Shutdown() {
+	worker.w.RemoveFunc(worker.name)
+	worker.Close()
 }
 
 // Close closes the connection.
@@ -41,6 +48,7 @@ func (worker *Worker) Close() {
 	if worker.w != nil {
 		worker.w.Close()
 	}
+	return
 }
 
 // NewWorker creates a new gearman worker with the specified name and job function.
