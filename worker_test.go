@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"testing"
 	"time"
 )
@@ -234,8 +233,7 @@ func GetClient() (c *client.Client) {
 		log.Fatalf("'%s', are you sure gearmand is running?", err)
 	}
 	c.ErrorHandler = func(e error) {
-		log.Println(e)
-		os.Exit(1)
+		log.Fatalln(e)
 	}
 	return c
 }
