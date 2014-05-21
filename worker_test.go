@@ -141,7 +141,7 @@ func TestCanDo(t *testing.T) {
 
 	name := "worker_name"
 
-	listener, channel = makeTCPServer(":1337", func(conn net.Conn) error {
+	listener, channel = makeTCPServer(":1338", func(conn net.Conn) error {
 		cmd, body, err := readGearmanCommand(conn)
 		if err != nil {
 			return err
@@ -161,7 +161,7 @@ func TestCanDo(t *testing.T) {
 	worker := NewWorker(name, func(job Job) ([]byte, error) {
 		return []byte{}, nil
 	})
-	go worker.Listen("localhost", "1337")
+	go worker.Listen("localhost", "1338")
 
 	for err := range channel {
 		t.Fatal(err)
