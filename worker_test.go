@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+const (
+	DefaultGearmanPort = "4730"
+	DefaultGearmanHost = "localhost"
+)
+
 type MockJob struct {
 	payload, name, handle, id string
 	err                       error
@@ -228,7 +233,7 @@ func TestJobAssign(t *testing.T) {
 }
 
 func GetClient() (c *client.Client) {
-	c, err := client.New(client.Network, "127.0.0.1:4730")
+	c, err := client.New(client.Network, fmt.Sprintf("%s:%s", DefaultGearmanHost, DefaultGearmanPort))
 	if err != nil {
 		log.Fatalf("'%s', are you sure gearmand is running?", err)
 	}
@@ -254,7 +259,7 @@ func TestShutdownNoJob(t *testing.T) {
 		return []byte{}, nil
 	})
 
-	go worker.Listen("localhost", "4730")
+	go worker.Listen(DefaultGearmanHost, DefaultGearmanPort)
 	worker.Shutdown()
 	return
 }
@@ -284,7 +289,7 @@ func TestShutdown(t *testing.T) {
 	workload2 := "2"
 
 	worker1 := NewWorker(name, getShutdownJobFn(doneChan, readyChan, workload1, 2*time.Second))
-	go worker1.Listen("localhost", "4730")
+	go worker1.Listen(DefaultGearmanHost, DefaultGearmanPort)
 	<-readyChan
 	worker1.Shutdown()
 
@@ -294,7 +299,7 @@ func TestShutdown(t *testing.T) {
 	}
 	doneChan = make(chan string, 1)
 	worker2 := NewWorker(name, getShutdownJobFn(doneChan, readyChan, workload2, 0))
-	go worker2.Listen("localhost", "4730")
+	go worker2.Listen(DefaultGearmanHost, DefaultGearmanPort)
 	out2 := <-doneChan
 	if out2 != workload2 {
 		t.Fatalf("expected return of '%s', received '%s'", out2, workload1)
