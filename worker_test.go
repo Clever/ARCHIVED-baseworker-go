@@ -162,6 +162,7 @@ func TestCanDo(t *testing.T) {
 		return []byte{}, nil
 	})
 	go worker.Listen("localhost", "1338")
+	defer worker.Close()
 
 	for err := range channel {
 		t.Fatal(err)
@@ -220,6 +221,7 @@ func TestJobAssign(t *testing.T) {
 		return []byte{}, nil
 	})
 	go worker.Listen("localhost", "1337")
+	defer worker.Close()
 
 	for err := range channel {
 		t.Fatal(err)
