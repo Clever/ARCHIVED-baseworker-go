@@ -15,10 +15,6 @@ README.md: *.go
 README: README.md
 
 $(PKGS): golint README
-	@if [[ -z "$(DRONE)" ]]; then \
-		echo "resetting gearman" \
-		./reset_gearmand.sh; \
-	fi
 	@go get -d -t $@
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)

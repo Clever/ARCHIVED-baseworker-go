@@ -229,7 +229,7 @@ func TestJobAssign(t *testing.T) {
 func GetClient() (c *client.Client) {
 	c, err := client.New(client.Network, "127.0.0.1:4730")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("'%s', are you sure gearmand is running?", err)
 	}
 	c.ErrorHandler = func(e error) {
 		log.Println(e)
@@ -261,8 +261,6 @@ func TestShutdownNoJob(t *testing.T) {
 
 // TestShutdown tests that the worker completes after worker.Shutdown is called
 // make sure the next job is the second workload
-//
-// NOTE: requires gearmand to be running!!!
 func TestShutdown(t *testing.T) {
 	c := GetClient()
 	defer c.Close()
