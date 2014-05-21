@@ -241,7 +241,7 @@ func GetClient() (c *client.Client) {
 }
 
 // makes a job function that waits before completing
-func getShutdownJobFn(doneChan chan string, readyChan chan int, workload string, sleepTime time.Duration) (jf func(job Job) ([]byte, error)) {
+func getShutdownJobFn(doneChan chan string, readyChan chan int, workload string, sleepTime time.Duration) func(job Job) ([]byte, error) {
 	return func(job Job) ([]byte, error) {
 		readyChan <- 1
 		time.Sleep(sleepTime)
