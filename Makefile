@@ -4,6 +4,9 @@ PKGS = $(PKG)
 
 .PHONY: test golint README
 
+export GEARMAN_HOST ?= localhost
+export GEARMAN_PORT ?= 4730
+
 golint:
 	@go get github.com/golang/lint/golint
 
