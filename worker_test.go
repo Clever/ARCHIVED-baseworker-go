@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/Clever/gearadmin"
 	"github.com/mikespook/gearman-go/client"
 	"io"
 	"log"
@@ -269,6 +270,14 @@ func TestShutdown(t *testing.T) {
 	c := GetClient()
 	defer c.Close()
 
+	// connect to gearman ourselves and see what's what
+	adminClient, err := net.Dial("tcp", fmt.Sprintf("%s:%s", GearmanHost, GearmanPort))
+	if err != nil {
+		panic(err)
+	}
+	defer adminClient.Close()
+	gearadmin := gearadmin.NewGearmanAdmin(adminClient)
+
 	// add jobs to client
 	name := "shutdown_worker"
 
@@ -296,6 +305,17 @@ func TestShutdown(t *testing.T) {
 	if out1 != workload1 {
 		t.Fatalf("expected return of '%s', received '%s'", out1, workload1)
 	}
+	status, _ := gearadmin.Status()
+	for _, w := range status {
+		if w.Function == name {
+			if w.AvailableWorkers != 0 {
+				t.Fatalf("%i Workers still available for function: %s", w.AvailableWorkers, w.Function)
+			}
+			break
+		}
+	}
+
+	// ensure second worker can work the next job
 	doneChan = make(chan string, 1)
 	worker2 := NewWorker(name, getShutdownJobFn(doneChan, readyChan, workload2, 0))
 	go worker2.Listen(GearmanHost, GearmanPort)
