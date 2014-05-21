@@ -276,7 +276,7 @@ func TestShutdown(t *testing.T) {
 		panic(err)
 	}
 	defer adminClient.Close()
-	gearadmin := gearadmin.NewGearmanAdmin(adminClient)
+	admin := gearadmin.NewGearmanAdmin(adminClient)
 
 	// add jobs to client
 	name := "shutdown_worker"
@@ -305,7 +305,7 @@ func TestShutdown(t *testing.T) {
 	if out1 != workload1 {
 		t.Fatalf("expected return of '%s', received '%s'", out1, workload1)
 	}
-	status, _ := gearadmin.Status()
+	status, _ := admin.Status()
 	for _, w := range status {
 		if w.Function == name {
 			if w.AvailableWorkers != 0 {
