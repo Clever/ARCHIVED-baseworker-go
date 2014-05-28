@@ -191,7 +191,6 @@ func makeGearmanCommand(cmd uint32, body []byte) ([]byte, error) {
 }
 
 // TestJobAssign tests that the worker runs the JOB_FUNC if the server sends a 'JOB_ASSIGN' packet.
-// TODO: something in this job throws EOFs when run multiple times, fix plz
 func TestJobAssign(t *testing.T) {
 
 	name := "worker_name"
