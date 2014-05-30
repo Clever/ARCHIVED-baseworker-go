@@ -231,7 +231,7 @@ func TestJobAssign(t *testing.T) {
 	}
 }
 
-func GetClient() (c *client.Client) {
+func getClient() (c *client.Client) {
 	c, err := client.New(client.Network, fmt.Sprintf("%s:%s", GearmanHost, GearmanPort))
 	if err != nil {
 		log.Fatalf("'%s', are you sure gearmand is running?", err)
@@ -253,7 +253,7 @@ func getShutdownJobFn(workload string, sleepTime time.Duration) func(job Job) ([
 }
 
 func TestShutdownNoJob(t *testing.T) {
-	c := GetClient()
+	c := getClient()
 	defer c.Close()
 
 	name := "shutdown_no_job"
@@ -294,7 +294,7 @@ func TestShutdownNoJob(t *testing.T) {
 // TestShutdown tests that the worker completes after worker.Shutdown is called
 // make sure the next job is the second workload
 func TestShutdown(t *testing.T) {
-	c := GetClient()
+	c := getClient()
 	defer c.Close()
 
 	// connect to gearman ourselves and see what's what
