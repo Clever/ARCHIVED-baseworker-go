@@ -77,6 +77,13 @@ func (worker *Worker) Listen(host, port string) error
 ```
 Listen starts listening for jobs on the specified host and port.
 
+#### func (*Worker) Shutdown
+
+```go
+func (worker *Worker) Shutdown()
+```
+Shutdown keeps the worker from grabbing the next job and closes the worker
+
 ## Testing
 
 You can run the test cases by typing `make test`

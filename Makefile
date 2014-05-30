@@ -4,6 +4,9 @@ PKGS = $(PKG)
 
 .PHONY: test golint README
 
+export GEARMAN_HOST ?= localhost
+export GEARMAN_PORT ?= 4730
+
 golint:
 	@go get github.com/golang/lint/golint
 
@@ -11,7 +14,7 @@ test: $(PKGS)
 
 README.md: *.go
 	@go get github.com/robertkrimen/godocdown/godocdown
-	@godocdown $(PKG) > README.md
+	$(GOPATH)/bin/godocdown $(PKG) > README.md
 README: README.md
 
 $(PKGS): golint README

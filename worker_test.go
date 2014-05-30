@@ -4,10 +4,18 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/Clever/gearadmin"
+	"github.com/mikespook/gearman-go/client"
 	"io"
+	"log"
 	"net"
+	"os"
 	"testing"
+	"time"
 )
+
+var GearmanPort = os.Getenv("GEARMAN_PORT")
+var GearmanHost = os.Getenv("GEARMAN_HOST")
 
 type MockJob struct {
 	payload, name, handle, id string
@@ -137,7 +145,7 @@ func TestCanDo(t *testing.T) {
 
 	name := "worker_name"
 
-	listener, channel = makeTCPServer(":1337", func(conn net.Conn) error {
+	listener, channel = makeTCPServer(":1338", func(conn net.Conn) error {
 		cmd, body, err := readGearmanCommand(conn)
 		if err != nil {
 			return err
@@ -157,7 +165,8 @@ func TestCanDo(t *testing.T) {
 	worker := NewWorker(name, func(job Job) ([]byte, error) {
 		return []byte{}, nil
 	})
-	go worker.Listen("localhost", "1337")
+	go worker.Listen("localhost", "1338")
+	defer worker.Close()
 
 	for err := range channel {
 		t.Fatal(err)
@@ -215,8 +224,140 @@ func TestJobAssign(t *testing.T) {
 		return []byte{}, nil
 	})
 	go worker.Listen("localhost", "1337")
+	defer worker.Close()
 
 	for err := range channel {
 		t.Fatal(err)
 	}
+}
+
+func getClient() (c *client.Client) {
+	c, err := client.New(client.Network, fmt.Sprintf("%s:%s", GearmanHost, GearmanPort))
+	if err != nil {
+		log.Fatalf("'%s', are you sure gearmand is running?", err)
+	}
+	c.ErrorHandler = func(e error) {
+		log.Fatalln(e)
+	}
+	return c
+}
+
+// makes a job function that waits before completing
+func getShutdownJobFn(workload string, sleepTime time.Duration) func(job Job) ([]byte, error) {
+	return func(job Job) ([]byte, error) {
+		log.Printf("starting sleeping, workload is: %s", workload)
+		time.Sleep(sleepTime)
+		log.Print("done sleeping")
+		return []byte(workload), nil
+	}
+}
+
+func TestShutdownNoJob(t *testing.T) {
+	c := getClient()
+	defer c.Close()
+
+	name := "shutdown_no_job"
+	workload := "0"
+
+	worker1 := NewWorker(name, func(job Job) ([]byte, error) {
+		t.Fatalf("should not have invoked worker!")
+		return []byte{}, nil
+	})
+
+	go worker1.Listen(GearmanHost, GearmanPort)
+
+	time.Sleep(500 * time.Millisecond)
+	worker1.Shutdown()
+
+	doneChan := make(chan string, 1)
+	_, err1 := c.Do(name, []byte(workload), client.JobNormal, func(r *client.Response) {
+		out, err := r.Result()
+		log.Println("resp on 0th job", out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(out[:]) != workload {
+			t.Fatalf("expected return of '%s', received '%s'", workload, out)
+		}
+		doneChan <- "1"
+	})
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+
+	worker2 := NewWorker(name, getShutdownJobFn(workload, 0))
+	go worker2.Listen(GearmanHost, GearmanPort)
+	<-doneChan
+	log.Println("DONE")
+}
+
+// TestShutdown tests that the worker completes after worker.Shutdown is called
+// make sure the next job is the second workload
+func TestShutdown(t *testing.T) {
+	c := getClient()
+	defer c.Close()
+
+	// connect to gearman ourselves and see what's what
+	adminClient, err := net.Dial("tcp", fmt.Sprintf("%s:%s", GearmanHost, GearmanPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer adminClient.Close()
+	admin := gearadmin.NewGearmanAdmin(adminClient)
+
+	// add jobs to client
+	name := "shutdown_worker"
+	workload1 := "1"
+	workload2 := "2"
+
+	_, err1 := c.Do(name, []byte(workload1), client.JobNormal, func(r *client.Response) {
+		out1, err := r.Result()
+		log.Println("resp on first job", out1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(out1[:]) != workload1 {
+			t.Fatalf("expected return of '%s', received '%s'", workload1, out1)
+		}
+	})
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+
+	worker1 := NewWorker(name, getShutdownJobFn(workload1, 2*time.Second))
+	go worker1.Listen(GearmanHost, GearmanPort)
+	log.Print("worker is shutting down")
+	time.Sleep(200 * time.Millisecond) // without readyChan, we need wait to avoid race cond in setup
+	worker1.Shutdown()
+	time.Sleep(1 * time.Second)
+
+	status, _ := admin.Status()
+	for _, w := range status {
+		if w.Function == name {
+			if w.AvailableWorkers != 0 {
+				t.Fatalf("%d Workers still available for function: %s", w.AvailableWorkers, w.Function)
+			}
+			break
+		}
+	}
+
+	_, err2 := c.Do(name, []byte(workload2), client.JobNormal, func(r *client.Response) {
+		out2, err := r.Result()
+		log.Println("resp on second job", out2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(out2[:]) != workload2 {
+			t.Fatalf("expected return of '%s', received '%s'", workload2, out2)
+		}
+	})
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+
+	// ensure second worker can work the next job
+	worker2 := NewWorker(name, getShutdownJobFn(workload2, 0))
+	go worker2.Listen(GearmanHost, GearmanPort)
+
+	return
 }
