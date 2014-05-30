@@ -272,7 +272,7 @@ func TestShutdown(t *testing.T) {
 	// connect to gearman ourselves and see what's what
 	adminClient, err := net.Dial("tcp", fmt.Sprintf("%s:%s", GearmanHost, GearmanPort))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	defer adminClient.Close()
 	admin := gearadmin.NewGearmanAdmin(adminClient)
@@ -282,7 +282,7 @@ func TestShutdown(t *testing.T) {
 
 	_, err1 := c.DoBg(name, []byte("1"), client.JobNormal)
 	if err1 != nil {
-		log.Fatalln(err1)
+		t.Fatal(err1)
 	}
 
 	_, err2 := c.DoBg(name, []byte("2"), client.JobNormal)
@@ -302,7 +302,7 @@ func TestShutdown(t *testing.T) {
 
 	out1 := <-doneChan
 	if out1 != workload1 {
-		t.Fatalf("expected return of '%s', received '%s'", out1, workload1)
+		t.Fatalf("expected return of '%s', received '%s'", workload1, out1)
 	}
 	status, _ := admin.Status()
 	for _, w := range status {
@@ -320,7 +320,7 @@ func TestShutdown(t *testing.T) {
 	go worker2.Listen(GearmanHost, GearmanPort)
 	out2 := <-doneChan
 	if out2 != workload2 {
-		t.Fatalf("expected return of '%s', received '%s'", out2, workload1)
+		t.Fatalf("expected return of '%s', received '%s'", workload2, out2)
 	}
 	return
 }
