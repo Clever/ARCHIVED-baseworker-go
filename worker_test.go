@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 )
 
 type MockJob struct {
@@ -43,6 +46,12 @@ func (m *MockJob) UpdateStatus(numerator, denominator int) {
 	m.denominator = denominator
 }
 
+// GetTestSigtermHandler return an no-op sigterm handler for the tests so that they
+// don't call exit(0) which is the default behavior.
+func getTestSigtermHandler() SigtermHandler {
+	return func(worker *Worker) {}
+}
+
 // TestJobFuncConversion tests that our JobFunc is called when 'worker.fn' is called with a job.
 func TestJobFuncConversion(t *testing.T) {
 	payload := "I'm a payload!"
@@ -53,6 +62,7 @@ func TestJobFuncConversion(t *testing.T) {
 		return []byte{}, nil
 	}
 	worker := NewWorker("test", jobFunc)
+	worker.sigtermHandler = getTestSigtermHandler()
 	worker.fn(&MockJob{payload: payload})
 }
 
@@ -129,6 +139,25 @@ func readGearmanCommand(reader io.Reader) (uint32, string, error) {
 	return cmd, string(body), nil
 }
 
+// MakeJobAssignServer creates a server that responds to connection with a JobAssign message
+// with the specified name and workload.
+func makeJobAssignServer(addr, name, workload string) (net.Listener, chan error) {
+	return makeTCPServer(addr, func(conn net.Conn) error {
+		handle := "job_handle"
+		function := name
+		body := []byte(handle + string('\x00') + function + string('\x00') + workload)
+
+		response, err := makeGearmanCommand(11, body)
+		if err != nil {
+			return err
+		}
+		if _, err := conn.Write(response); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 // TestCanDo tests that Listen properly sends a 'CAN_DO worker_name' packet to the TCP server.
 func TestCanDo(t *testing.T) {
 
@@ -157,11 +186,13 @@ func TestCanDo(t *testing.T) {
 	worker := NewWorker(name, func(job Job) ([]byte, error) {
 		return []byte{}, nil
 	})
+	worker.sigtermHandler = getTestSigtermHandler()
 	go worker.Listen("localhost", "1337")
 
 	for err := range channel {
 		t.Fatal(err)
 	}
+	worker.w.Shutdown()
 }
 
 func makeGearmanCommand(cmd uint32, body []byte) ([]byte, error) {
@@ -190,20 +221,7 @@ func TestJobAssign(t *testing.T) {
 	var channel chan error
 	var listener net.Listener
 
-	listener, channel = makeTCPServer(":1337", func(conn net.Conn) error {
-		handle := "job_handle"
-		function := name
-		body := []byte(handle + string('\x00') + function + string('\x00') + workload)
-
-		response, err := makeGearmanCommand(11, body)
-		if err != nil {
-			return err
-		}
-		if _, err := conn.Write(response); err != nil {
-			return err
-		}
-		return nil
-	})
+	listener, channel = makeJobAssignServer(":1337", name, workload)
 	defer listener.Close()
 
 	worker := NewWorker(name, func(job Job) ([]byte, error) {
@@ -214,9 +232,52 @@ func TestJobAssign(t *testing.T) {
 		close(channel)
 		return []byte{}, nil
 	})
+	worker.sigtermHandler = getTestSigtermHandler()
 	go worker.Listen("localhost", "1337")
 
 	for err := range channel {
 		t.Fatal(err)
+	}
+	worker.w.Shutdown()
+}
+
+func TestShutdownWaitsForJobCompletion(t *testing.T) {
+	var wg sync.WaitGroup
+	name := "shutdown_worker"
+	var listener net.Listener
+
+	listener, _ = makeJobAssignServer(":1337", name, "")
+	defer listener.Close()
+
+	ranJob := false
+	worker := NewWorker(name, func(job Job) ([]byte, error) {
+		wg.Done()
+		time.Sleep(time.Duration(10 * time.Millisecond))
+		ranJob = true
+		return []byte{}, nil
+	})
+	worker.sigtermHandler = getTestSigtermHandler()
+
+	wg.Add(1)
+	go worker.Listen("localhost", "1337")
+	wg.Wait()
+	worker.w.Shutdown()
+	if !ranJob {
+		t.Error("Didn't run job")
+	}
+}
+
+func TestHandleSignal(t *testing.T) {
+	worker := NewWorker("SignalWorker", func(job Job) ([]byte, error) {
+		return nil, nil
+	})
+	ranSigtermHandler := false
+	worker.sigtermHandler = func(worker *Worker) {
+		ranSigtermHandler = true
+	}
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	time.Sleep(time.Duration(10 * time.Millisecond))
+	if !ranSigtermHandler {
+		t.Error("Didn't run sigterm handler")
 	}
 }

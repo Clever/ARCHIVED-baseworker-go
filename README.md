@@ -47,6 +47,15 @@ type JobFunc func(Job) ([]byte, error)
 
 JobFunc is a function that takes in a Gearman job and does some work on it.
 
+#### type SigtermHandler
+
+```go
+type SigtermHandler func(*Worker)
+```
+
+SigtermHandler is the definition for the function called after the worker
+receives a TERM signal.
+
 #### type Worker
 
 ```go
