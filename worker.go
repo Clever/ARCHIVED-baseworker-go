@@ -3,10 +3,12 @@ package baseworker
 import (
 	"errors"
 	"fmt"
-	gearmanWorker "github.com/mikespook/gearman-go/worker"
+	gearmanWorker "github.com/Clever/gearman-go/worker"
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 // JobFunc is a function that takes in a Gearman job and does some work on it.
@@ -15,11 +17,16 @@ type JobFunc func(Job) ([]byte, error)
 // Job is an alias for http://godoc.org/github.com/mikespook/gearman-go/worker#Job.
 type Job gearmanWorker.Job
 
+// SigtermHandler is the definition for the function called after the worker receives
+// a TERM signal.
+type SigtermHandler func(*Worker)
+
 // Worker represents a Gearman worker.
 type Worker struct {
-	fn   gearmanWorker.JobFunc
-	name string
-	w    *gearmanWorker.Worker
+	fn             gearmanWorker.JobFunc
+	name           string
+	w              *gearmanWorker.Worker
+	sigtermHandler SigtermHandler
 }
 
 // Listen starts listening for jobs on the specified host and port.
@@ -41,6 +48,14 @@ func (worker *Worker) Close() {
 	if worker.w != nil {
 		worker.w.Close()
 	}
+}
+
+func defaultSigtermHandler(worker *Worker) {
+	if worker.w != nil {
+		// Shutdown blocks, waiting for all jobs to finish
+		worker.w.Shutdown()
+	}
+	os.Exit(0)
 }
 
 // NewWorker creates a new gearman worker with the specified name and job function.
@@ -65,5 +80,12 @@ func NewWorker(name string, fn JobFunc) *Worker {
 			}
 		}
 	}
-	return &Worker{fn: jobFunc, name: name, w: w}
+	worker := &Worker{fn: jobFunc, name: name, w: w, sigtermHandler: defaultSigtermHandler}
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGTERM)
+	go func() {
+		<-sigc
+		worker.sigtermHandler(worker)
+	}()
+	return worker
 }
