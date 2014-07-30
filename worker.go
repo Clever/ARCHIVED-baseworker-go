@@ -1,11 +1,14 @@
 package baseworker
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	gearmanWorker "github.com/Clever/gearman-go/worker"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -88,4 +91,24 @@ func NewWorker(name string, fn JobFunc) *Worker {
 		worker.sigtermHandler(worker)
 	}()
 	return worker
+}
+
+func PostToCleverJobEndpoint(output interface{}, nextWorker string) (err error) {
+	if data, err := json.Marshal(output); err == nil {
+		client := &http.Client{}
+		jobEndpoint := os.Getenv("CLEVER_JOB_ENDPOINT")
+		if len(jobEndpoint) == 0 {
+			log.Printf("Not posting:\n%s\n", string(data))
+			return nil
+		}
+		log.Printf("Posting to '%s'", jobEndpoint)
+		req, err := http.NewRequest("POST",
+			fmt.Sprintf("%s/%s", jobEndpoint, nextWorker),
+			bytes.NewReader(data))
+		req.Header.Add("content-type", "application/json")
+		if err == nil {
+			_, err = client.Do(req)
+		}
+	}
+	return
 }
