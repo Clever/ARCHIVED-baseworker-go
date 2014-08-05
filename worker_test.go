@@ -10,41 +10,9 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/Clever/baseworker-go/mock"
 )
-
-type MockJob struct {
-	payload, name, handle, id string
-	err                       error
-	warnings                  [][]byte
-	data                      [][]byte
-	numerator, denominator    int
-}
-
-func (m MockJob) Err() error {
-	return m.err
-}
-func (m MockJob) Data() []byte {
-	return []byte(m.payload)
-}
-func (m MockJob) Fn() string {
-	return m.name
-}
-func (m MockJob) Handle() string {
-	return m.handle
-}
-func (m MockJob) UniqueId() string {
-	return m.id
-}
-func (m *MockJob) SendWarning(warning []byte) {
-	m.warnings = append(m.warnings, warning)
-}
-func (m *MockJob) SendData(data []byte) {
-	m.data = append(m.data, data)
-}
-func (m *MockJob) UpdateStatus(numerator, denominator int) {
-	m.numerator = numerator
-	m.denominator = denominator
-}
 
 // GetTestSigtermHandler return an no-op sigterm handler for the tests so that they
 // don't call exit(0) which is the default behavior.
@@ -63,7 +31,7 @@ func TestJobFuncConversion(t *testing.T) {
 	}
 	worker := NewWorker("test", jobFunc)
 	worker.sigtermHandler = getTestSigtermHandler()
-	worker.fn(&MockJob{payload: payload})
+	worker.fn(mock.CreateMockJob(payload))
 }
 
 func makeTCPServer(addr string, handler func(conn net.Conn) error) (net.Listener, chan error) {
