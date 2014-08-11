@@ -13,30 +13,47 @@ func CreateMockJob(payload string) *MockJob {
 	return &MockJob{payload: payload}
 }
 
+// Err returns the job's error
 func (m MockJob) Err() error {
 	return m.err
 }
+
+// Data returns the job's data
 func (m MockJob) Data() []byte {
 	return []byte(m.payload)
 }
+
+// Fn returns the name of the worker's job
 func (m MockJob) Fn() string {
 	return m.name
 }
+
+// Handle returns the job handle
 func (m MockJob) Handle() string {
 	return m.handle
 }
+
+// UniqueId returns the unique id for the job
 func (m MockJob) UniqueId() string {
 	return m.id
 }
+
+// SendWarning appends to the array of job warnings
 func (m *MockJob) SendWarning(warning []byte) {
 	m.warnings = append(m.warnings, warning)
 }
-func (m *MockJob) GetWarnings() [][]byte {
+
+// Warnings returns the array of warnings for the job
+func (m *MockJob) Warnings() [][]byte {
 	return m.warnings
 }
+
+// SendData appends to the array of job data
 func (m *MockJob) SendData(data []byte) {
 	m.data = append(m.data, data)
 }
+
+// UpdateStatus updates the progress of job
 func (m *MockJob) UpdateStatus(numerator, denominator int) {
 	m.numerator = numerator
 	m.denominator = denominator
