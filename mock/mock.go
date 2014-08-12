@@ -1,5 +1,6 @@
 package mock
 
+// MockJob is a fake Gearman job for tests
 type MockJob struct {
 	payload, name, handle, id string
 	err                       error
@@ -23,12 +24,12 @@ func (m MockJob) Data() []byte {
 	return []byte(m.payload)
 }
 
-// Fn returns the name of the worker's job
+// Fn returns the job's name
 func (m MockJob) Fn() string {
 	return m.name
 }
 
-// Handle returns the job handle
+// Handle returns the job's handle
 func (m MockJob) Handle() string {
 	return m.handle
 }
@@ -43,7 +44,7 @@ func (m *MockJob) SendWarning(warning []byte) {
 	m.warnings = append(m.warnings, warning)
 }
 
-// Warnings returns the array of warnings for the job
+// Warnings returns the array of jobs warnings
 func (m *MockJob) Warnings() [][]byte {
 	return m.warnings
 }

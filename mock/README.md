@@ -12,6 +12,7 @@ type MockJob struct {
 }
 ```
 
+MockJob is a fake Gearman job for tests
 
 #### func  CreateMockJob
 
@@ -40,14 +41,14 @@ Err returns the job's error
 ```go
 func (m MockJob) Fn() string
 ```
-Fn returns the name of the worker's job
+Fn returns the job's name
 
 #### func (MockJob) Handle
 
 ```go
 func (m MockJob) Handle() string
 ```
-Handle returns the job handle
+Handle returns the job's handle
 
 #### func (*MockJob) SendData
 
@@ -82,4 +83,4 @@ UpdateStatus updates the progress of job
 ```go
 func (m *MockJob) Warnings() [][]byte
 ```
-Warnings returns the array of warnings for the job
+Warnings returns the array of jobs warnings
