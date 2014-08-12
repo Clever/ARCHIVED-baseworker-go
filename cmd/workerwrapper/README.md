@@ -32,10 +32,10 @@ Make sure you have exported the Gearman environment variables:
 `export GEARMAN_PORT=4730`
 
 Then run it:
-`workerwrapper --name job_name --exec job_executable`
+`workerwrapper --name job_name --cmd job_cmd`
 
 job_name is the name of the Gearman job to listen for
-job_executable is the name of the worker program to run
+job_cmd is the name of the worker program to run
 
 And submit jobs to it:
 `gearman -f job_name -h localhost -v -s`
