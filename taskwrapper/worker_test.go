@@ -1,4 +1,4 @@
-package workerwrapper
+package taskwrapper
 
 import (
 	"io/ioutil"

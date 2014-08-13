@@ -1,4 +1,4 @@
-package workerwrapper
+package taskwrapper
 
 import (
 	"bufio"
