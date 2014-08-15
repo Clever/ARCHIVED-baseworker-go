@@ -5,25 +5,24 @@
 
 ## Usage
 
-#### type WorkerConfig
+#### type TaskConfig
 
 ```go
-type WorkerConfig struct {
+type TaskConfig struct {
 	JobName       string
 	JobCmd        string
 	WarningLines  int
 }
 ```
 
-WorkerConfig defines the configuration for the worker process this program
-wraps.
+TaskConfig defines the configuration for the task this program wraps.
 
-#### func (WorkerConfig) Process
+#### func (TaskConfig) Process
 
 ```go
-func (conf WorkerConfig) Process(job baseworker.Job) (data []byte, err error)
+func (conf TaskConfig) Process(job baseworker.Job) (data []byte, err error)
 ```
-Process runs the Gearman job by running the configured worker process.
+Process runs the Gearman job by running the configured task.
 
 ## Testing
 

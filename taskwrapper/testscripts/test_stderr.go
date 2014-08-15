@@ -10,6 +10,6 @@ import (
 // we mix the stderr of the test process itself with the worker process which makes things a bit trickier.
 func main() {
 	mockJob := mock.CreateMockJob("IgnorePayload")
-	config := wrapper.WorkerConfig{JobName: "name", JobExecutable: "testscripts/logStderr.sh", WarningLines: 5}
+	config := wrapper.TaskConfig{JobName: "name", JobExecutable: "testscripts/logStderr.sh", WarningLines: 5}
 	config.Process(mockJob)
 }
