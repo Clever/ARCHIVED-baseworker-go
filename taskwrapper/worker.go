@@ -21,8 +21,19 @@ type TaskConfig struct {
 
 // Process runs the Gearman job by running the configured task.
 func (conf TaskConfig) Process(job baseworker.Job) ([]byte, error) {
+	// This wraps the actual processing to do some logging
+	log.Printf("STARTING %s %s %s", conf.FunctionName, job.UniqueId(), string(job.Data()))
+	result, err := conf.doProcess(job)
+	if err != nil {
+		log.Printf("ENDING %s %s %s", conf.FunctionName, job.UniqueId(), err.Error())
+	} else {
+		log.Printf("ENDING %s %s", conf.FunctionName, job.UniqueId())
+	}
+	return result, err
+}
 
-	log.Printf("Running job: %s:%s", conf.FunctionName, job.UniqueId())
+func (conf TaskConfig) doProcess(job baseworker.Job) ([]byte, error) {
+
 	defer func() {
 		// If we panicked then set the panic message as a warning. Gearman-go will
 		// handle marking this job as failed.
@@ -36,53 +47,60 @@ func (conf TaskConfig) Process(job baseworker.Job) ([]byte, error) {
 		return nil, err
 	}
 	cmd := exec.Command(conf.FunctionCmd, args...)
+
+	// Write the stdout and stderr of the process to both this process' stdout and stderr
+	// and also write it to a byte buffer so that we can return it with the Gearman job
+	// data as necessary.
 	var stderrbuf bytes.Buffer
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrbuf)
-	var stdoutbuf bytes.Buffer
-	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutbuf)
-	io.WriteString(cmd.Stderr, "input\n")
-	if err := cmd.Start(); err != nil {
+	stdoutReader, stdoutWriter := io.Pipe()
+	cmd.Stdout = io.MultiWriter(os.Stdout, stdoutWriter)
+	finishedProcessingStdout := make(chan error)
+	go func() {
+		finishedProcessingStdout <- streamToGearman(stdoutReader, job)
+	}()
+	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
-	if err := cmd.Wait(); err != nil {
+	stdoutWriter.Close()
+	sendStderrWarnings(&stderrbuf, job, conf.WarningLines)
+	if err = <-finishedProcessingStdout; err != nil {
 		return nil, err
 	}
-	stderrToWarnings(stderrbuf, job, conf.WarningLines)
-	job.SendData(stdoutbuf.Bytes())
-
-	log.Printf("Finished job: %s:%s", conf.FunctionName, job.UniqueId())
 	return nil, nil
 }
 
-func stderrToWarnings(buffer bytes.Buffer, job baseworker.Job, warningLines int) error {
-	scanner := bufio.NewScanner(&buffer)
+// This function streams the reader to the Gearman job (through job.SendData())
+func streamToGearman(reader io.Reader, job baseworker.Job) error {
+	buffer := make([]byte, 1024)
+	for {
+		n, err := reader.Read(buffer)
+		// Process the data before processing the error (as per the io.Reader docs)
+		if n > 0 {
+			job.SendData(buffer[:n])
+		}
+		if err != nil && err != io.EOF {
+			return err
+		} else if err != nil {
+			return nil
+		}
+	}
+}
+
+// sendStderrWarnings sends the last X lines in the stderr output and to the job's warnings
+// field
+func sendStderrWarnings(buffer io.Reader, job baseworker.Job, warningLines int) error {
+	scanner := bufio.NewScanner(buffer)
+	// Create a circular buffer for the last X lines
 	lastStderrLines := ring.New(warningLines)
 	for scanner.Scan() {
 		lastStderrLines = lastStderrLines.Next()
 		lastStderrLines.Value = scanner.Bytes()
 	}
+	// Walk forward through the buffer to get all the last X entries. Note that we call next first
+	// so that we start at the oldest entry.
 	for i := 0; i < lastStderrLines.Len(); i++ {
-		lastStderrLines = lastStderrLines.Next()
-		if lastStderrLines.Value != nil {
-			job.SendWarning(lastStderrLines.Value.([]byte))
-		}
-	}
-	return scanner.Err()
-}
-
-// processAndForwardStderr forwards the stderr from the worker process to the stderr of this process
-// and also keeps track of the last X stderr lines. These last stderr lines are set to the warnings
-// field in the Gearman job.
-func (conf TaskConfig) processAndForwardStderr(job baseworker.Job, stderr io.Reader) error {
-	scanner := bufio.NewScanner(stderr)
-	lastStderrLines := ring.New(conf.WarningLines)
-	for scanner.Scan() {
-		lastStderrLines = lastStderrLines.Next()
-		lastStderrLines.Value = scanner.Bytes()
-	}
-	for i := 0; i < lastStderrLines.Len(); i++ {
-		lastStderrLines = lastStderrLines.Next()
-		if lastStderrLines.Value != nil {
+		if lastStderrLines = lastStderrLines.Next(); lastStderrLines.Value != nil {
 			job.SendWarning(lastStderrLines.Value.([]byte))
 		}
 	}

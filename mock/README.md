@@ -27,7 +27,7 @@ interface
 ```go
 func (m MockJob) Data() []byte
 ```
-Data returns the job's data
+Data returns the Gearman payload
 
 #### func (MockJob) Err
 
@@ -49,6 +49,13 @@ Fn returns the job's name
 func (m MockJob) Handle() string
 ```
 Handle returns the job's handle
+
+#### func (MockJob) OutData
+
+```go
+func (m MockJob) OutData() []byte
+```
+OutData returns the Gearman outpack data
 
 #### func (*MockJob) SendData
 

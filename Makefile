@@ -1,7 +1,6 @@
 SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
-SUBPKGS := github.com/Clever/baseworker-go/mock \
-	github.com/Clever/baseworker-go/workerwrapper
+SUBPKGS := github.com/Clever/baseworker-go/taskwrapper
 PKGS := $(PKG) $(SUBPKGS)
 READMES = $(addsuffix /README.md, $(PKGS))
 

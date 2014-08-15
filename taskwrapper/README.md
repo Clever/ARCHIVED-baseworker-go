@@ -1,6 +1,6 @@
 # workerwrapper
 --
-    import "github.com/Clever/baseworker-go/workerwrapper"
+    import "github.com/Clever/baseworker-go/taskwrapper"
 
 
 ## Usage
@@ -9,18 +9,17 @@
 
 ```go
 type TaskConfig struct {
-	JobName       string
-	JobCmd        string
-	WarningLines  int
+	FunctionName, FunctionCmd string
+	WarningLines              int
 }
 ```
 
-TaskConfig defines the configuration for the task this program wraps.
+TaskConfig defines the configuration for the task.
 
 #### func (TaskConfig) Process
 
 ```go
-func (conf TaskConfig) Process(job baseworker.Job) (data []byte, err error)
+func (conf TaskConfig) Process(job baseworker.Job) ([]byte, error)
 ```
 Process runs the Gearman job by running the configured task.
 
