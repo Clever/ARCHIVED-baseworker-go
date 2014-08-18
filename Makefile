@@ -1,6 +1,8 @@
 SHELL := /bin/bash
 PKG = github.com/Clever/baseworker-go
-PKGS = $(PKG)
+SUBPKGS := github.com/Clever/baseworker-go/mock
+PKGS := $(PKG) $(SUBPKGS)
+READMES = $(addsuffix /README.md, $(PKGS))
 
 .PHONY: test golint README
 
@@ -8,13 +10,12 @@ golint:
 	@go get github.com/golang/lint/golint
 
 test: $(PKGS)
-
-README.md: *.go
+docs: $(READMES)
+%/README.md:
 	@go get github.com/robertkrimen/godocdown/godocdown
-	@godocdown $(PKG) > README.md
-README: README.md
+	@$(GOPATH)/bin/godocdown $(shell dirname $@) > $(GOPATH)/src/$@
 
-$(PKGS): golint README
+$(PKGS): golint docs
 	@go get -d -t $@
 	@gofmt -w=true $(GOPATH)/src/$@*/**.go
 ifneq ($(NOLINT),1)
