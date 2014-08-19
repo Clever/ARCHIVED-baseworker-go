@@ -2,7 +2,6 @@ package argsparser
 
 import (
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -10,7 +9,12 @@ import (
 // ParseArgs converts the command line specified into a slice of the command line arguments.
 func ParseArgs(commandline string) ([]string, error) {
 	file, err := ioutil.TempFile("/tmp", "parseArgs")
-	defer os.Remove(file.Name())
+	fileClosed := false
+	defer func() {
+		if !fileClosed {
+			file.Close()
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +29,8 @@ func ParseArgs(commandline string) ([]string, error) {
 	if err := file.Chmod(0744); err != nil {
 		return nil, err
 	}
+	file.Close()
+	fileClosed = true
 	cmd := exec.Command(file.Name())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

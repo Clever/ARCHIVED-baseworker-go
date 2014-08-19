@@ -1,11 +1,13 @@
 package mock
 
+import "bytes"
+
 // MockJob is a fake Gearman job for tests
 type MockJob struct {
 	payload, name, handle, id string
 	err                       error
 	warnings                  [][]byte
-	data                      [][]byte
+	data                      bytes.Buffer
 	numerator, denominator    int
 }
 
@@ -19,9 +21,14 @@ func (m MockJob) Err() error {
 	return m.err
 }
 
-// Data returns the job's data
+// Data returns the Gearman payload
 func (m MockJob) Data() []byte {
 	return []byte(m.payload)
+}
+
+// OutData returns the Gearman outpack data
+func (m MockJob) OutData() []byte {
+	return m.data.Bytes()
 }
 
 // Fn returns the job's name
@@ -51,7 +58,7 @@ func (m *MockJob) Warnings() [][]byte {
 
 // SendData appends to the array of job data
 func (m *MockJob) SendData(data []byte) {
-	m.data = append(m.data, data)
+	m.data.Write(data)
 }
 
 // UpdateStatus updates the progress of job
