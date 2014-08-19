@@ -24,16 +24,41 @@ Output
 
 Usage
 -----
+taskwrapper --name name --cmd cmd --gearman-host 'localhost' --gearman-port '4730'
+Params:
+name: The name of the Gearman function to listen for
+cmd: The cmd to run when the wrapper receives a Gearman job
+gearman-host (optional): The Gearman host to connect to
+gearman-port (optional): The Gearman port to connect to
 
-First build the WorkerWrapper and add it to your GOPATH with the command:
-`go get github.com/Clever/baseworker-go/cmd/workerwrapper`
 
-Then run it:
-`workerwrapper --name function_name --cmd function_cmd`
+Example
+-------
+This will walk you through running a simple task through the taskwrapper.
 
-function_name is the name of the Gearman function to listen for
-function_cmd is the name of the task to run
-gearman-host and gearman-port are optional parameters.
+First build the TaskWrapper and add it to your GOPATH with the command:
+```
+go get github.com/Clever/baseworker-go/cmd/taskwrapper`
+```
 
-And submit jobs to it:
-`gearman -f function_name -h localhost -v -s`
+Then create a bash script, test.sh. This will be the command the taskwrapper runs:
+```
+#!/bin/bash
+echo $1
+echo $2
+```
+
+Start the taskwrapper and tell it to run test.sh when it gets 'test' jobs.
+```
+taskwrapper --name test --cmd test.sh
+```
+
+At this point you should be able to submit Gearman jobs. For example, this command:
+```
+gearman -f test -h localhost -v -s` "firstLine secondLine"
+```
+should output:
+```
+firstLine
+secondLine
+```
