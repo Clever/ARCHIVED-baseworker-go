@@ -1,4 +1,4 @@
-# workerwrapper
+# taskwrapper
 --
     import "github.com/Clever/baseworker-go/taskwrapper"
 
