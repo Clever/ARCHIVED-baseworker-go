@@ -29,7 +29,7 @@ func main() {
 	config := taskwrapper.TaskConfig{FunctionName: *functionName, FunctionCmd: *functionCmd, WarningLines: 5}
 	worker := baseworker.NewWorker(*functionName, config.Process)
 	defer worker.Close()
-	log.Printf("Listing for job: " + *functionName)
+	log.Printf("Listening for job: " + *functionName)
 	if err := worker.Listen(*gearmanHost, *gearmanPort); err != nil {
 		log.Fatal(err)
 	}

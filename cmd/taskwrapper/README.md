@@ -55,7 +55,7 @@ taskwrapper --name test --cmd test.sh
 
 At this point you should be able to submit Gearman jobs. For example, this command:
 ```
-gearman -f test -h localhost -v -s` "firstLine secondLine"
+gearman -f test -h localhost -v -s "firstLine secondLine"
 ```
 should output:
 ```
