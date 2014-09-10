@@ -24,12 +24,14 @@ Output
 
 Usage
 -----
-taskwrapper --name name --cmd cmd --gearman-host 'localhost' --gearman-port '4730'
+`taskwrapper --name name --cmd cmd --gearman-host 'localhost' --gearman-port '4730'`
+
 Params:
-name: The name of the Gearman function to listen for
-cmd: The cmd to run when the wrapper receives a Gearman job
-gearman-host (optional): The Gearman host to connect to
-gearman-port (optional): The Gearman port to connect to
+
+- `name`: The name of the Gearman function to listen for
+- `cmd`: The cmd to run when the wrapper receives a Gearman job
+- `gearman-host` (optional): The Gearman host to connect to
+- `gearman-port` (optional): The Gearman port to connect to
 
 
 Example
