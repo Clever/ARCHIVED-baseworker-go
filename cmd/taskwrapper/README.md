@@ -24,7 +24,9 @@ Output
 
 Usage
 -----
-`taskwrapper --name name --cmd cmd --gearman-host 'localhost' --gearman-port '4730'`
+```
+taskwrapper --name name --cmd cmd --gearman-host 'localhost' --gearman-port '4730'
+```
 
 Params:
 
