@@ -9,6 +9,11 @@
 
 ```go
 type MockJob struct {
+	Payload, Name, GearmanHandle, Id string
+	GearmanErr                       error
+	GearmanWarnings                  [][]byte
+	DataBuffer                       bytes.Buffer
+	Numerator, Denominator           int
 }
 ```
 
