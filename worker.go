@@ -3,12 +3,13 @@ package baseworker
 import (
 	"errors"
 	"fmt"
-	gearmanWorker "github.com/Clever/gearman-go/worker"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	gearmanWorker "github.com/Clever/gearman-go/worker"
 )
 
 // JobFunc is a function that takes in a Gearman job and does some work on it.
@@ -51,6 +52,7 @@ func (worker *Worker) Close() {
 }
 
 func defaultSigtermHandler(worker *Worker) {
+	log.Println("Received sigterm. Shutting down gracefully.")
 	if worker.w != nil {
 		// Shutdown blocks, waiting for all jobs to finish
 		worker.w.Shutdown()
