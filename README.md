@@ -1,3 +1,9 @@
+# DEPRECATED
+
+`baseworker-go` is no longer supported.
+We suggest you utilize [gearcmd](https://github.com/Clever/gearcmd) instead.
+
+
 # baseworker
 --
     import "github.com/Clever/baseworker-go"
